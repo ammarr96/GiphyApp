@@ -22,9 +22,11 @@ import java.io.*
 import android.Manifest.permission
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.app.ProgressDialog
+import android.content.pm.PackageManager
 import android.view.View
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -41,10 +43,8 @@ class UploadDataActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_upload_data)
 
-        makeRequest()
-
         selectBtn.setOnClickListener {
-            openGallery()
+            checkPermission()
         }
 
         uploatBtn.setOnClickListener {
@@ -141,8 +141,17 @@ class UploadDataActivity : AppCompatActivity() {
         return videoPath
     }
 
-    private fun makeRequest() {
+    private fun requestPermission() {
         ActivityCompat.requestPermissions(this, arrayOf(READ_EXTERNAL_STORAGE), 1)
+    }
+
+    private fun checkPermission() {
+        if (ContextCompat.checkSelfPermission(applicationContext, READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermission()
+        }
+        else {
+            openGallery()
+        }
     }
 
     public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?)
@@ -153,6 +162,12 @@ class UploadDataActivity : AppCompatActivity() {
                 videoFile = File(getVideoPathFromURI(selectedVideoUri!!))
                 selectedVideoText.text = "Selected video: " + videoFile.name
             }
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if (ContextCompat.checkSelfPermission(applicationContext, READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            openGallery()
         }
     }
 }
