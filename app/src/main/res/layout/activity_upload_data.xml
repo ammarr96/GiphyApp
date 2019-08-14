@@ -7,7 +7,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center_horizontal"
-        android:background="#C0C0C0"
+        android:background="#FFF"
         tools:context=".UploadDataActivity">
 
     <androidx.appcompat.widget.Toolbar
@@ -38,12 +38,22 @@
             android:orientation="vertical">
 
         <EditText
+                android:id="@+id/tagsEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="#000"
                 android:textColorHint="#929292"
                 android:layout_margin="15dp"
                 android:hint="Enter tags"/>
+
+        <TextView
+                android:id="@+id/selectedVideoText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="15dp"
+                android:textSize="17sp"
+                android:textColor="#000"
+                android:text=""/>
 
 
         <Button android:id="@+id/selectBtn"

@@ -35,11 +35,7 @@ import java.util.Base64.getEncoder
 
 class UploadDataActivity : AppCompatActivity() {
 
-    var base64Encoded = ""
     lateinit var videoFile: File
-    var multiPartBody: MultipartBody.Part? = null
-    var parts = mutableListOf<MultipartBody.Part>()
-    lateinit var videoPart: RequestBody
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +48,12 @@ class UploadDataActivity : AppCompatActivity() {
         }
 
         uploatBtn.setOnClickListener {
-            uploadToServer()
+            if (selectedVideoText.text.toString().length>0) {
+                uploadToServer()
+            }
+            else {
+                Toast.makeText(applicationContext, "Select video", Toast.LENGTH_SHORT).show()
+            }
         }
 
     }
@@ -71,7 +72,7 @@ class UploadDataActivity : AppCompatActivity() {
         val requestBody = RequestBody.create(MediaType.parse("multipart/form-data"), videoFile)
         val fileToUpload = MultipartBody.Part.createFormData("file", videoFile.getName(), requestBody)
         val apiKeyPart = RequestBody.create(MediaType.parse("multipart/form-data"), getString(R.string.api_key))
-        val tagsPart = RequestBody.create(MediaType.parse("multipart/form-data"), "amar, lubovac")
+        val tagsPart = RequestBody.create(MediaType.parse("multipart/form-data"), tagsEditText.text.toString())
 
         val apiService = RetrofitFactory.makeApiService()
         val call: Call<Any> = apiService.uploadGiff(fileToUpload, apiKeyPart, tagsPart)
@@ -79,18 +80,17 @@ class UploadDataActivity : AppCompatActivity() {
         call.enqueue(object : Callback<Any> {
 
             override fun onResponse(call: Call<Any>?, response: Response<Any>?) {
-                //Toast.makeText(applicationContext, response?.code().toString(), Toast.LENGTH_SHORT).show()
-                //Toast.makeText(applicationContext, response?.toString(), Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
                 if (response?.code() == 200) {
                     Toast.makeText(applicationContext, "Video is uploaded", Toast.LENGTH_SHORT).show()
+                    finish()
                 }
             }
 
             override fun onFailure(call: Call<Any>?, t: Throwable?) {
                 progressBar.visibility = View.GONE
                 Toast.makeText(applicationContext, "Error", Toast.LENGTH_SHORT).show()
-                //Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_SHORT).show()
+                finish()
             }
 
         })
@@ -151,8 +151,8 @@ class UploadDataActivity : AppCompatActivity() {
             if (data?.data !=  null) {
                 val selectedVideoUri = data.data
                 videoFile = File(getVideoPathFromURI(selectedVideoUri!!))
+                selectedVideoText.text = "Selected video: " + videoFile.name
             }
-
         }
     }
 }

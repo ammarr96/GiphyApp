@@ -1,6 +1,7 @@
 package com.amarlubovac.giphyapp
 
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
@@ -8,12 +9,11 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.GridLayout
-import android.widget.ImageView
-import android.widget.SearchView
-import android.widget.Toast
+import android.view.inputmethod.InputMethodManager
+import android.widget.*
 import androidx.core.view.isVisible
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -33,8 +33,10 @@ import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var list: MutableList<GiffImage>
+    var list: MutableList<GiffImage> = mutableListOf()
     var isFullScreen = false
+    var limit = 21
+    var offset = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,28 +47,30 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        searchEditText.addTextChangedListener(object: TextWatcher {
-            override fun afterTextChanged(p0: Editable?) {
-
-            }
-
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+        searchEditText.setOnEditorActionListener(object: TextView.OnEditorActionListener {
+            override fun onEditorAction(p0: TextView?, p1: Int, p2: KeyEvent?): Boolean {
                 progressBar.visibility = View.VISIBLE
-                if (p0.toString().equals("")) {
+                showMore.visibility = View.GONE
+                gridLayout?.removeAllViews()
+                offset = 0
+                limit = 21
+                if (searchEditText.text.toString().equals("")) {
                     getTrenging()
                 }
                 else {
-                    search(p0.toString())
+                    search(searchEditText.text.toString())
                 }
+                hideKeyboard()
+                return true
             }
 
         })
 
         refreshLayout.setOnRefreshListener {
+            gridLayout?.removeAllViews()
+            showMore.visibility = View.GONE
+            offset = 0
+            limit = 21
             if (searchEditText.text.toString().equals("")) {
                 getTrenging()
             }
@@ -75,13 +79,27 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        showMore.setOnClickListener {
+            limit += 9
+            offset = list.size
+            showMore.visibility = View.GONE
+            progressBar.visibility = View.VISIBLE
+            if (searchEditText.text.toString().length != 0) {
+                search(searchEditText.text.toString())
+            }
+            else {
+                getTrenging()
+            }
+        }
+
         progressBar.visibility = View.VISIBLE
         getTrenging()
     }
 
     fun getTrenging() {
+        list.clear()
         val apiService = RetrofitFactory.makeApiService()
-        val call: Call<DataModel> = apiService.getTrending(getString(R.string.api_key), 21, "G")
+        val call: Call<DataModel> = apiService.getTrending(getString(R.string.api_key), limit, offset, "G")
 
         call.enqueue(object : Callback<DataModel> {
 
@@ -91,12 +109,19 @@ class MainActivity : AppCompatActivity() {
                 populateGrid()
                 saveData()
                 progressBar.visibility = View.GONE
+                if (list.size==0) {
+                    Toast.makeText(applicationContext, "Results not found", Toast.LENGTH_SHORT).show()
+                }
+                else  {
+                    showMore.visibility = View.VISIBLE
+                }
                 refreshLayout.setRefreshing(false);
             }
 
             override fun onFailure(call: Call<DataModel>?, t: Throwable?) {
                 //Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
+                showMore.visibility = View.GONE
                 refreshLayout.setRefreshing(false);
                 try {
                     readData()
@@ -112,7 +137,7 @@ class MainActivity : AppCompatActivity() {
 
     fun search(query: String) {
         val apiService = RetrofitFactory.makeApiService()
-        val call: Call<DataModel> = apiService.searchGif(getString(R.string.api_key), query, 21,0, "G")
+        val call: Call<DataModel> = apiService.searchGif(getString(R.string.api_key), query, limit, offset, "G")
 
         call.enqueue(object : Callback<DataModel> {
 
@@ -120,14 +145,20 @@ class MainActivity : AppCompatActivity() {
                 //Toast.makeText(applicationContext, response?.body().toString(), Toast.LENGTH_SHORT).show()
                 list = response?.body()?.data!!.toMutableList()
                 populateGrid()
-                saveData()
                 progressBar.visibility = View.GONE
-                refreshLayout.setRefreshing(false);
+                refreshLayout.setRefreshing(false)
+                if (list.size==0) {
+                    Toast.makeText(applicationContext, "Results not found", Toast.LENGTH_SHORT).show()
+                }
+                else  {
+                    showMore.visibility = View.VISIBLE
+                }
             }
 
             override fun onFailure(call: Call<DataModel>?, t: Throwable?) {
                 //Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_SHORT).show()
                 progressBar.visibility = View.GONE
+                showMore.visibility = View.GONE
                 refreshLayout.setRefreshing(false);
                 try {
                     readData()
@@ -142,20 +173,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun populateGrid() {
-        gridLayout?.removeAllViews()
 
         gridLayout?.columnCount = 3
         gridLayout?.rowCount = list.size / 3
 
-        //addViewToGridLayout(0,0, 1, 1, "https://cdn.images.express.co.uk/img/dynamic/24/590x/McLaren-Senna-car-price-new-2018-890981.jpg")
-
-
-        for (i in 0..list.size-1) {
+        for (i in offset..list.size-1) {
             addViewToGridLayout(i/3, i%3, 1, 1, list.get(i).images?.image?.url!!, list.get(i).images?.giff?.url!!)
-            //addViewToGridLayout(i,i%3, 1, 1, "https://cdn.images.express.co.uk/img/dynamic/24/590x/McLaren-Senna-car-price-new-2018-890981.jpg")
-            //Toast.makeText(applicationContext, list.get(i).images?.image?.url!!, Toast.LENGTH_SHORT).show()
         }
 
+        if (offset>0) {
+            scrollToBottom()
+        }
+
+    }
+
+    fun scrollToBottom() {
+        scrollView.post(Runnable {
+            scrollView.scrollTo(0, gridLayout.getBottom())
+        })
     }
 
     private fun addViewToGridLayout(row: Int, column: Int, rowSpan: Int, columnSpan: Int, image: String, giff: String) {
@@ -224,6 +259,15 @@ class MainActivity : AppCompatActivity() {
         fullScreenLayout.visibility = View.GONE
         this.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         isFullScreen = false
+    }
+
+    @SuppressLint("ServiceCast")
+    fun hideKeyboard() {
+        val view = this.currentFocus
+        view?.let { v ->
+            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.let { it.hideSoftInputFromWindow(v.windowToken, 0) }
+        }
     }
 
     fun saveData() {

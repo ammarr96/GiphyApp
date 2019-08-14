@@ -11,6 +11,7 @@ interface ApiService {
     fun getTrending(
         @Query("api_key") apiKey: String,
         @Query("limit") limit: Int,
+        @Query("offset") offset: Int,
         @Query("rating") rating: String): Call<DataModel>
 
     @GET("v1/gifs/search")
@@ -18,7 +19,7 @@ interface ApiService {
         @Query("api_key") apiKey: String,
         @Query("q") query: String,
         @Query("limit") limit: Int,
-        @Query("offest") offset: Int,
+        @Query("offset") offset: Int,
         @Query("rating") rating: String): Call<DataModel>
 
     @Multipart
