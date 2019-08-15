@@ -259,6 +259,7 @@ class MainActivity : AppCompatActivity() {
         fullScreenLayout.visibility = View.GONE
         this.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         isFullScreen = false
+        floatingActionButton2.isVisible = true
     }
 
     @SuppressLint("ServiceCast")
